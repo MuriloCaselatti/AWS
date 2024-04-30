@@ -1,6 +1,6 @@
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/cliente-s3';
 import { Readable } from 'stream';
-import sharp from 'sharp'; 
+import sharp from 'sharp';
 import { STATUS_CODES } from 'http';
 
 const client = new S3Client({ region: "us-east-1" });
@@ -14,8 +14,7 @@ export const handler = async (event) => {
             body: error.message,
         };
     }
-
-
+    
     return {
         statusCode: 200,
         body: 'Imagem redimensaionada com sucesso!'
@@ -59,18 +58,26 @@ async function getObject(bucketName, objectKey) {
     }
 }
 
-async function putObject(dstBucket, dstKey, content){
-    try{
-        const putCommand = new PutObjectCommand({
-            Bucket: dstBucket,
-            Key: dstKey,
-            Body: content,
-            ContentType: "image"
-        });
-        const putResult = await client.send(putCommand);
-        return putResult;
-    } catch(error){
-        console.log(error);
-        return;
+async function putObject(dstBucket, dstKey, content) {
+    try {
+
+        try {
+            // Verificar se o nome do arquivo contém caracteres inválidos
+            if (/[/\\:*?"<>|]/.test(dstKey)) {
+                throw new Error('O nome do arquivo contém caracteres inválidos');
+            }
+
+            const putCommand = new PutObjectCommand({
+                Bucket: dstBucket,
+                Key: dstKey,
+                Body: content,
+                ContentType: "image"
+            });
+            const putResult = await client.send(putCommand);
+            return putResult;
+        } catch (error) {
+            console.error('Erro ao fazer upload do arquivo para o Amazon S3:', error.message);
+            return;
+        }
     }
 }
